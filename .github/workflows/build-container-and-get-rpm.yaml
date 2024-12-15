@@ -1,0 +1,33 @@
+on:
+  workflow_dispatch: {}
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: "true"
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          provenance: true
+          sbom: true
+          push: false
+          tags: resource-agent-build
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Get RPMS
+        run: |
+            docker run --detach --rm --platform linux/amd64 --name resource-agent-build resource-agent-build /bin/bash -c 'while true; do echo -n .; sleep 1; done'
+            docker cp resource-agent-build:/root/rpmbuild/RPMS/x86_64 .
+            docker stop resource-agent-build
+      - uses: ncipollo/release-action@v1
+        with:
+          artifacts: "x86_64/*.rpm"
+          tag: "4.16.0-1"
