@@ -2,6 +2,9 @@ on:
   workflow_dispatch: {}
 jobs:
   build:
+    permissions:
+      packages: write
+      contents: write
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
@@ -18,13 +21,13 @@ jobs:
         with:
           provenance: true
           sbom: true
-          push: false
-          tags: resource-agent-build
+          push: true
+          tags: ghcr.io/${{ github.repository }}/resource-agent-build
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Get RPMS
         run: |
-            docker run --detach --rm --platform linux/amd64 --name resource-agent-build resource-agent-build /bin/bash -c 'while true; do echo -n .; sleep 1; done'
+            docker run --detach --rm --platform linux/amd64 --name resource-agent-build ghcr.io/${{ github.repository }}/resource-agent-build /bin/bash -c 'while true; do echo -n .; sleep 1; done'
             docker cp resource-agent-build:/root/rpmbuild/RPMS/x86_64 .
             docker stop resource-agent-build
       - uses: ncipollo/release-action@v1
